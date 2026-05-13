@@ -1,5 +1,7 @@
 import socket
 import json
+import os
+from crypto_modules.custom_rsa import CustomRSA
 
 # Localhost setup for testing on your own machine
 HOST = '127.0.0.1' 
@@ -8,9 +10,39 @@ PORT = 65432
 def start_server():
     print("--- Server Starting ---")
     
-    # TODO: Initialize CustomRSA, load the Server's private key, 
-    # and load the Digital Certificate given by the CA.
+    # Initialize CustomRSA
+    rsa = CustomRSA()
+    
+    # Load or Generate the Server's keys
+    priv_key_path = os.path.join(os.path.dirname(__file__), 'server_storage', 'server_private_key.json')
+    pub_key_path = os.path.join(os.path.dirname(__file__), 'server_storage', 'server_public_key.json')
+    
+    try:
+        with open(priv_key_path, 'r') as f:
+            key_data = json.load(f)
+            rsa.private_key = (key_data['d'], key_data['n'])
+        with open(pub_key_path, 'r') as f:
+            key_data = json.load(f)
+            rsa.public_key = (key_data['e'], key_data['n'])
+        print("Successfully loaded Server's RSA keys from storage.")
+    except FileNotFoundError:
+        print("Keys not found. Generating new 1024-bit RSA keys for the Server...")
+        rsa.generate_keys(1024)
+        
+        # Save Private Key
+        with open(priv_key_path, 'w') as f:
+            json.dump({"d": rsa.private_key[0], "n": rsa.private_key[1]}, f, indent=4)
+            
+        # Save Public Key
+        with open(pub_key_path, 'w') as f:
+            json.dump({"e": rsa.public_key[0], "n": rsa.public_key[1]}, f, indent=4)
+        print("Successfully generated and saved Server's RSA keys.")
 
+    # Get CA to sign a certificate
+    
+
+
+    # TODO: Load the Digital Certificate given by the CA.
     # 1. Boot up the Socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))

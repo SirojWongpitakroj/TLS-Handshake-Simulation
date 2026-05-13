@@ -1,5 +1,6 @@
 import socket
 import json
+import os
 
 # Add the parent directory to the path so we can import crypto_modules
 from crypto_modules.custom_rsa import CustomRSA
@@ -12,13 +13,18 @@ class CertificateAuthority:
         print("--- Certificate Authority Starting ---")
         
         self.rsa = CustomRSA()
-        # TODO: 1. Generate keys for the CA.
-        # Hint: The CA needs its own public and private keys to sign certificates.
+        # Generate keys for the CA.
+        print("Generating 1024-bit RSA keys for the CA...")
+        self.rsa.generate_keys(1024)
         
-        
-        # TODO: 2. Save the CA's public key to a file (e.g., in ca_storage).
-        # Hint: The Client node will need to load this file later during Phase 3 to verify certificates.
-        pass
+        # Save the CA's public key to a file in ca_storage.
+        pub_key_path = os.path.join(os.path.dirname(__file__), 'ca_storage', 'ca_public_key.json')
+        with open(pub_key_path, 'w') as f:
+            json.dump({
+                "e": self.rsa.public_key[0],
+                "n": self.rsa.public_key[1]
+            }, f, indent=4)
+        print(f"CA Public Key successfully saved to: {pub_key_path}")
         
     def generate_certificate(self, server_identity, server_public_key):
         """

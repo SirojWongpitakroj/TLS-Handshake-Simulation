@@ -61,15 +61,8 @@ class CustomRSA:
         """Multiplicative Inverse to find inverse of e"""
         (c, x, y) = self._ext_euclid_gcd(e, totient)
         return x
+
     def generate_keys(self, bit_length=1024):
-        """
-        TODO: Implement the RSA Key Generation Algorithm (Module 6)
-        1. Generate two large prime numbers, p and q.
-        2. Calculate n = p * q
-        3. Calculate totient = (p-1)*(q-1)
-        4. Choose e (relatively prime to totient)
-        5. Calculate d (multiplicative inverse of e mod totient)
-        """
         half_bits = bit_length // 2
 
         p = self._generate_prime(half_bits)
@@ -87,10 +80,8 @@ class CustomRSA:
             if math.gcd(e, totient_n) == 1:
                 break
         
-        # 5. Calculate d (multiplicative inverse of e mod totient)
         d = self._multinv(e, totient_n)
         
-        # Finally, save the keys to the class instance variables
         self.public_key = (e, self.n)
         self.private_key = (d, self.n)
         

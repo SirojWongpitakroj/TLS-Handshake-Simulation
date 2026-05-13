@@ -1,8 +1,10 @@
 import socket
 import json
 import os
+import sys
 
 # Add the parent directory to the path so we can import crypto_modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from crypto_modules.custom_rsa import CustomRSA
 
 HOST = '127.0.0.1'
@@ -32,13 +34,18 @@ class CertificateAuthority:
         """
         # TODO: 3. Create the "claim" string.
         # Hint: Combine the server_identity and server_public_key into a single verifiable string.
+        claim = f"Identity={server_identity},PubKey={server_public_key[0]},{server_public_key[1]}"
 
         # TODO: 4. Sign the claim.
         # Hint: Hash the claim and sign it using the CA's private key using your CustomRSA.sign_data() method.
+        enc_signature = self.rsa.sign_data(claim, self.rsa.private_key[0], self.rsa.n)
         
         # TODO: 5. Construct the final certificate.
         # Hint: The certificate should probably be a dictionary containing the plaintext claim and the encrypted signature.
-        return {}
+        return {
+                "plaintext_claim": claim,
+                "encrypted_signature": enc_signature
+                }
 
     def start(self):
         """
@@ -56,11 +63,16 @@ class CertificateAuthority:
                     
                     # TODO: 6. Receive the Server's identity and public key via the socket.
                     # Hint: Use conn.recv() and expect a JSON string containing the data.
+                    req_data = conn.recv(4096).decode()
+                    req = json.loads(req_data)
+                    
 
                     # TODO: 7. Call self.generate_certificate() with the received data.
+                    certificate = self.generate_certificate(req['identity'], req['public_key'])
                     
                     # TODO: 8. Send the completed certificate back to the Server over the socket.
                     # Hint: Convert the certificate to JSON and encode it before sending with conn.sendall().
+                    conn.sendall(json.dumps(certificate).encode())
                     
                     print("Certificate generated and sent to Server.")
 

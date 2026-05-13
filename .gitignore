@@ -1,0 +1,12 @@
+# Python Cache
+__pycache__/
+*.py[cod]
+
+# Cryptographic Key Storage (DO NOT COMMIT)
+ca_storage/
+server_storage/
+client_storage/
+
+# Simulation Data Folders
+received_data/
+data_to_send/

@@ -87,15 +87,24 @@ class CustomRSA:
         
         print(f"Successfully generated {bit_length}-bit RSA Keys!")
 
+    def _encrypt(self, a, m, n):
+        bin_m = bin(m)[2:]
+
+        d = 1
+        for bit in bin_m:
+            d = (d * d) % n
+            if bit == '1':
+                d = (d * a) % n
+        return d
+    
     def sign_data(self, plaintext_claim, private_key, n):
-        """
-        TODO: Implement Digital Signature creation
-        1. Hash the plaintext_claim using hashlib.sha256()
-        2. Convert the hash to an integer.
-        3. Encrypt the integer using the private key: Hash^d mod n
-        4. Return the encrypted signature.
-        """
-        pass
+        # Hash the claim
+        hash_raw = hashlib.sha256(plaintext_claim.encode()).hexdigest()
+        hash_int = int(hash_raw, 16)
+
+        # Encrypt hash with private keys
+        encrypted_signature = self._encrypt(hash_int, private_key, n)
+        return encrypted_signature
 
     def verify_signature(self, plaintext_claim, signature, public_key, n):
         """

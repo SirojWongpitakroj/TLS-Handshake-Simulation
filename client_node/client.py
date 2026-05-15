@@ -57,7 +57,8 @@ def start_client():
 
         # 5. Phase 4: Diffie-Hellman
         # TODO: If verified, wait for Server to send DH parameters.
-
+        print("Waiting for Server's DH parameters")
+        dh_data = s.recv(4096)
 
 
 if __name__ == "__main__":

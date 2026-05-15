@@ -44,7 +44,7 @@ class CertificateAuthority:
         # Hint: The certificate should probably be a dictionary containing the plaintext claim and the encrypted signature.
         return {
                 "plaintext_claim": claim,
-                "encrypted_signature": enc_signature
+                "signature": enc_signature
                 }
 
     def start(self):

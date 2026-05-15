@@ -1,6 +1,6 @@
 import secrets
 
-def is_prime(n, k=5):
+def _is_prime(n, k=5):
         """Miller-Rabin primality test for checking if a number is likely prime."""
         if n <= 1: return False
         if n <= 3: return True
@@ -14,7 +14,7 @@ def is_prime(n, k=5):
 
         # Run the test k times
         for _ in range(k):
-            a = secrets.choice(range(1, n-1))
+            a = secrets.randbelow(n - 2) + 2
             x = pow(a, d, n)
             if x == 1 or x == n - 1:
                 continue
@@ -35,7 +35,7 @@ def generate_prime(bit_length):
         p |= (1 << bit_length - 1) | 1 
         
         # Check if it's prime
-        if is_prime(p):
+        if _is_prime(p):
             return p
 
 def ext_euclid_gcd(a, b):
@@ -52,3 +52,13 @@ def multinv(e, totient):
     """Multiplicative Inverse to find inverse of e"""
     (c, x, y) = ext_euclid_gcd(e, totient)
     return x
+
+def mod_exp(a, m, n):
+        bin_m = bin(m)[2:]
+
+        d = 1
+        for bit in bin_m:
+            d = (d * d) % n
+            if bit == '1':
+                d = (d * a) % n
+        return d

@@ -7,6 +7,7 @@ import secrets
 #Add root directory for the import crypto_modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
 from crypto_modules.custom_rsa import CustomRSA
+from crypto_modules.diffie_hellman import DHOakley
 
 # Localhost setup for testing on your own machine
 SERVER_HOST = '127.0.0.1' 
@@ -43,6 +44,7 @@ def get_certificate(rsa):
         with open(CERT_PATH, 'w') as f:
             json.dump(certificate, f, indent=4)
         print("Successfully received and saved Digital Certificate from CA.")
+        return certificate
     
 
 
@@ -63,6 +65,7 @@ def start_server():
         with open(pub_key_path, 'r') as f:
             key_data = json.load(f)
             rsa.public_key = (key_data['e'], key_data['n'])
+            rsa.n = key_data['n']
         print("Successfully loaded Server's RSA keys from storage.")
     except FileNotFoundError:
         print("Keys not found. Generating new 1024-bit RSA keys for the Server...")
@@ -111,6 +114,36 @@ def start_server():
             # 4. Phase 4: Diffie-Hellman Key Exchange
             # TODO: Wait for Client to verify the certificate. 
             # Then generate p, g, and Y_S, sign them, and send to Client.
+            server_dh = DHOakley()
+            (p, g, X_s, Y_s) = server_dh.generate_params(2048)
+            plaintext = {
+                "p": p,
+                "g": g,
+                "Y_s": Y_s
+            }
+
+            # sign_data expects a string, so we convert the dictionary to a JSON string first
+            dh_claim_str = json.dumps(plaintext)
+            dh_signature = CustomRSA.sign_data(dh_claim_str, rsa.private_key, rsa.n)
+            dh_params_signature = {
+                "type": "ServerKeyExchange",
+                "p": p,
+                "g": g,
+                "Y_s": Y_s,
+                "signature": dh_signature
+            }
+            conn.sendall(json.dumps(dh_params_signature).encode())
+            print("Sent ServerKeyExchange with DH parameters and signature.")
+
+            # Receive Client's Y_c
+            client_ke_data = conn.recv(4096)
+            client_ke_msg = json.loads(client_ke_data.decode())
+            Y_c = client_ke_msg['Y_c']
+            print("Received ClientKeyExchange.")
+
+            # Calculate session key
+            session_key = server_dh.calculate_session_key(Y_c)
+
     
 
 if __name__ == "__main__":

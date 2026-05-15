@@ -1,5 +1,5 @@
 import hashlib
-import random
+import secrets
 import math
 
 class CustomRSA:
@@ -23,7 +23,7 @@ class CustomRSA:
 
         # Run the test k times
         for _ in range(k):
-            a = random.randrange(2, n - 1)
+            a = secrets.choice(range(1, n-1))
             x = pow(a, d, n)
             if x == 1 or x == n - 1:
                 continue
@@ -39,7 +39,7 @@ class CustomRSA:
         """Generate a random prime number of a specific bit length."""
         while True:
             # Generate a random integer with the exact bit length
-            p = random.getrandbits(bit_length)
+            p = secrets.randbits(bit_length)
             # Ensure the number is odd (lowest bit is 1) and has the correct bit length (highest bit is 1)
             p |= (1 << bit_length - 1) | 1 
             
@@ -76,7 +76,7 @@ class CustomRSA:
         totient_n = (p-1)*(q-1)
         
         while True:
-            e = random.randrange(2, totient_n)
+            e = secrets.choice(range(2, totient_n))
             if math.gcd(e, totient_n) == 1:
                 break
         

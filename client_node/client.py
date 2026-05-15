@@ -1,21 +1,33 @@
 import socket
 import json
+import sys
+import os
+import secrets
 
-HOST = '127.0.0.1'  
-PORT = 65432        
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from crypto_modules.custom_rsa import CustomRSA
+
+SERVER_HOST = '127.0.0.1'  
+SERVER_PORT = 65432        
 
 def start_client():
     print("--- Client Starting ---")
     
+    ca_pub_key_path = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'certificate_authority', 'ca_storage', 'ca_public_key.json')
     # TODO: Load the CA's Public Key so the Client can verify the Server later.
+    ca_rsa = CustomRSA()
+
+    with open(ca_pub_key_path, 'r') as f:
+        key_data = json.load(f)
+        ca_rsa.public_key = (key_data['e'], key_data['n'])
 
     # 1. Connect to the Server's Socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
+        s.connect((SERVER_HOST, SERVER_PORT))
 
         # 2. Send Phase 2: ClientHello
         # TODO: Generate a true random nonce for the client
-        client_nonce = "client_random_nonce_123"
+        client_nonce = secrets.token_hex(32)
         
         client_hello = {
             "type": "ClientHello",
@@ -25,7 +37,7 @@ def start_client():
         print("Sent ClientHello.")
 
         # 3. Receive Phase 2: ServerHello
-        data = s.recv(1024)
+        data = s.recv(4096)
         server_msg = json.loads(data.decode())
         print(f"Received from Server: {server_msg['type']}")
         

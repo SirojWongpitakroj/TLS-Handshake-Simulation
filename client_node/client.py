@@ -48,9 +48,17 @@ def start_client():
         # TODO: Pass the server_certificate and the CA's public key 
         # into your CustomRSA.verify_signature() method.
         # If it fails, close the socket (s.close()).
+        plaintext_claim = server_certificate['plaintext_claim']
+        signature = server_certificate['signature']
+
+        if not CustomRSA.verify_signature(plaintext_claim, signature, ca_rsa.public_key, ca_rsa.n):
+            print("Verification failed")
+            s.close()
 
         # 5. Phase 4: Diffie-Hellman
         # TODO: If verified, wait for Server to send DH parameters.
+
+
 
 if __name__ == "__main__":
     start_client()

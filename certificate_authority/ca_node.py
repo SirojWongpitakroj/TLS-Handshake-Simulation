@@ -38,7 +38,7 @@ class CertificateAuthority:
 
         # TODO: 4. Sign the claim.
         # Hint: Hash the claim and sign it using the CA's private key using your CustomRSA.sign_data() method.
-        enc_signature = self.rsa.sign_data(claim, self.rsa.private_key[0], self.rsa.n)
+        enc_signature = CustomRSA.sign_data(claim, self.rsa.private_key, self.rsa.n)
         
         # TODO: 5. Construct the final certificate.
         # Hint: The certificate should probably be a dictionary containing the plaintext claim and the encrypted signature.

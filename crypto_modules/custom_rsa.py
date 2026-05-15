@@ -87,7 +87,8 @@ class CustomRSA:
         
         print(f"Successfully generated {bit_length}-bit RSA Keys!")
 
-    def _encrypt(self, a, m, n):
+    @staticmethod
+    def _mod_exp(self, a, m, n):
         bin_m = bin(m)[2:]
 
         d = 1
@@ -97,15 +98,17 @@ class CustomRSA:
                 d = (d * a) % n
         return d
     
+    @staticmethod
     def sign_data(self, plaintext_claim, private_key, n):
         # Hash the claim
         hash_raw = hashlib.sha256(plaintext_claim.encode()).hexdigest()
         hash_int = int(hash_raw, 16)
 
         # Encrypt hash with private keys
-        encrypted_signature = self._encrypt(hash_int, private_key, n)
+        encrypted_signature = self._mod_exp(hash_int, private_key[0], n)
         return encrypted_signature
 
+    @staticmethod
     def verify_signature(self, plaintext_claim, signature, public_key, n):
         """
         TODO: Implement Digital Signature verification
@@ -113,4 +116,9 @@ class CustomRSA:
         2. Hash the plaintext_claim yourself.
         3. Compare your hash with the decrypted hash. Return True if they match.
         """
-        pass
+        decrypted_signature = self._mod_exp(signature, public_key[0], n)
+
+        hash_claim = hashlib.sha256(plaintext_claim.encode()).hexdigest()
+        hash_int = int(hash_claim, 16)
+
+        return True if decrypted_signature == hash_int else False

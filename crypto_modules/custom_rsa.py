@@ -4,7 +4,6 @@ from .crypto_math import *
 
 class CustomRSA:
     def __init__(self):
-        # Your generated keys will live here
         self.public_key = None
         self.private_key = None
         self.n = None
@@ -49,7 +48,6 @@ class CustomRSA:
     @staticmethod
     def verify_signature(plaintext_claim, signature, public_key, n):
         """
-        TODO: Implement Digital Signature verification
         1. Decrypt the signature using the public key: Signature^e mod n
         2. Hash the plaintext_claim yourself.
         3. Compare your hash with the decrypted hash. Return True if they match.

@@ -39,14 +39,13 @@ def generate_prime(bit_length):
             return p
 
 def ext_euclid_gcd(a, b):
-        """Extended Euclideam Algorithm with recursion to find inverse of e"""
-        if b == 0:
-            return (a, 1, 0)
-        (c1, x1, y1) = ext_euclid_gcd(b, a%b)
-        c = c1
-        x = y1
-        y = x1 - (a // b) * y1
-        return (c, x, y)
+        """Extended Euclidean Algorithm (Iterative) to avoid RecursionError for large primes"""
+        x0, x1, y0, y1 = 1, 0, 0, 1
+        while b != 0:
+            q, a, b = a // b, b, a % b
+            x0, x1 = x1, x0 - q * x1
+            y0, y1 = y1, y0 - q * y1
+        return (a, x0, y0)
 
 def multinv(e, totient):
     """Multiplicative Inverse to find inverse of e"""

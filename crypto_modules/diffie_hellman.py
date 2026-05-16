@@ -16,7 +16,7 @@ class DHOakley:
 
         if not g:
             while True:
-                g = secrets.choice(range(2, totient_p))
+                g = secrets.randbelow(totient_p - 2) + 2
                 (gcd, _, _) = ext_euclid_gcd(g, totient_p)
                 if gcd == 1:
                     break

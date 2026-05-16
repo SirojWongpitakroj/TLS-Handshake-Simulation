@@ -42,6 +42,9 @@ def start_client():
         client_nonce = secrets.token_hex(32)
         client_hello = {
             "type": "ClientHello",
+            "version": "TLS 1.2",
+            "cipher_suites": [
+                "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"],
             "nonce_c": client_nonce
         }
         s.sendall(json.dumps(client_hello).encode())
@@ -52,6 +55,7 @@ def start_client():
         data = s.recv(4096)
         server_msg = json.loads(data.decode())
         log(PHASE2, f"Received from Server: {server_msg['type']}")
+        log(PHASE2, f"Agreed Protocol: {server_msg.get('version')} | Cipher: {server_msg.get('cipher_suite')}")
         server_nonce = server_msg['nonce_s']
         server_certificate = server_msg['certificate']
 
@@ -138,14 +142,31 @@ def start_client():
 
         # Phase 6: The Secure Tunnel (Data Transfer)
         phase_header(PHASE6, "Phase 6: Secure Tunnel (Data Transfer)")
-        secret_message = "Hello Server! This is a top secret message encrypted with AES-128-CBC."
-        log(PHASE6, f"Original Message: {secret_message}")
+        log(PHASE6, "Secure Chat started. Type 'exit' to quit.")
 
-        encrypted_message = cipher.encrypt(secret_message)
-        log(CIPHER, f"Sending Ciphertext: {encrypted_message[:50]}...")
+        while True:
+            secret_message = input("\n[Client] You: ")
+            if secret_message.strip().lower() == 'exit':
+                s.sendall(cipher.encrypt("exit").encode())
+                break
 
-        s.sendall(encrypted_message.encode())
-        log(SUCCESS, "Secure Data Sent!")
+            encrypted_message = cipher.encrypt(secret_message)
+            log(CIPHER, f"Sending Ciphertext: {encrypted_message[:50]}...")
+            s.sendall(encrypted_message.encode())
+
+            # Wait for Server response
+            server_data = s.recv(4096).decode()
+            if not server_data:
+                break
+
+            log(CIPHER, f"Received Ciphertext: {server_data[:50]}...")
+            decrypted_reply = cipher.decrypt(server_data)
+            
+            if decrypted_reply.strip().lower() == 'exit':
+                log(PHASE6, "Server closed the connection.")
+                break
+
+            log(SUCCESS, f"[Server] Reply: {decrypted_reply}")
 
         session_complete()
 

@@ -134,13 +134,21 @@ def start_server():
             data = conn.recv(4096)
             client_msg = json.loads(data.decode())
             log(PHASE2, f"Received from Client: {client_msg['type']}")
+            log(PHASE2, f"Client supported protocol: {client_msg.get('version')}")
             client_nonce = client_msg['nonce_c']
 
             # Phase 2: Send ServerHello & Certificate
             phase_header(PHASE2, "Phase 2: Send ServerHello & Certificate")
             server_nonce = secrets.token_hex(32)
+            
+            # Select the first supported cipher suite or default
+            client_suites = client_msg.get('cipher_suites', [])
+            selected_suite = client_suites[0] if client_suites else "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"
+
             server_hello = {
                 "type": "ServerHello",
+                "version": "TLS 1.2",
+                "cipher_suite": selected_suite,
                 "nonce_s": server_nonce,
                 "certificate": certificate
             }
@@ -204,16 +212,36 @@ def start_server():
 
             # Phase 6: The Secure Tunnel (Data Transfer)
             phase_header(PHASE6, "Phase 6: Secure Tunnel (Data Transfer)")
-            log(PHASE6, "Listening for Secure Data...")
+            log(PHASE6, "Secure Chat started. Waiting for Client...")
 
-            encrypted_data = conn.recv(4096).decode()
-            log(CIPHER, f"Received Ciphertext: {encrypted_data[:50]}...")
+            while True:
+                encrypted_data = conn.recv(4096).decode()
+                if not encrypted_data:
+                    break
 
-            try:
-                decrypted_message = cipher.decrypt(encrypted_data)
-                log(SUCCESS, f"Decrypted Message from Client: {decrypted_message}")
-            except Exception as e:
-                log(ERROR, f"Failed to decrypt data or MAC verification failed: {e}")
+                log(CIPHER, f"\nReceived Ciphertext: {encrypted_data[:50]}...")
+
+                try:
+                    decrypted_message = cipher.decrypt(encrypted_data)
+                    if decrypted_message.strip().lower() == 'exit':
+                        log(PHASE6, "Client closed the connection.")
+                        break
+
+                    log(SUCCESS, f"[Client] Message: {decrypted_message}")
+
+                    # Server Response
+                    reply = input("[Server] You: ")
+                    if reply.strip().lower() == 'exit':
+                        conn.sendall(cipher.encrypt("exit").encode())
+                        break
+
+                    encrypted_reply = cipher.encrypt(reply)
+                    log(CIPHER, f"Sending Ciphertext: {encrypted_reply[:50]}...")
+                    conn.sendall(encrypted_reply.encode())
+
+                except Exception as e:
+                    log(ERROR, f"Failed to decrypt data or MAC verification failed: {e}")
+                    break
 
             session_complete()
 

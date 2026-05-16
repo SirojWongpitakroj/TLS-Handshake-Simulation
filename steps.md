@@ -14,11 +14,11 @@ The Server must obtain a Digital Certificate from the Certificate Authority (CA)
 
 The Client initiates the socket connection and ensures the session is fresh to prevent Replay Attacks.
 
-* **Client $\rightarrow$ Server:** $\text{ClientHello} \parallel N_C$
-> *Explanation:* The Client sends a greeting and crucially generates a fresh, random Nonce ($N_C$).
+* **Client $\rightarrow$ Server:** $\text{ClientHello} \parallel Version_{TLS} \parallel Suites \parallel N_C$
+> *Explanation:* The Client sends a greeting, its supported TLS Version (e.g., TLS 1.2), a list of supported Cipher Suites (for this simulation, strictly AES-128-CBC with SHA-256), and crucially generates a fresh, random Nonce ($N_C$).
 
-* **Server $\rightarrow$ Client:** $\text{ServerHello} \parallel N_S \parallel \text{Certificate}$
-> *Explanation:* The Server replies with its own Nonce ($N_S$) and its Digital Certificate.
+* **Server $\rightarrow$ Client:** $\text{ServerHello} \parallel Version_{TLS} \parallel SelectedSuite \parallel N_S \parallel \text{Certificate}$
+> *Explanation:* The Server replies with the agreed-upon TLS Version and Cipher Suite, its own Nonce ($N_S$), and its Digital Certificate.
 
 ---
 

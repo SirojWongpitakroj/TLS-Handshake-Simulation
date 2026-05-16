@@ -54,9 +54,22 @@ $$K = Y_S^{X_C} \pmod p = Y_C^{X_S} \pmod p$$
 
 ---
 
-### **Phase 5: The Secure Tunnel (Data Transfer)**
+### **Phase 5: The Handshake Verification (Preventing Downgrade Attacks)**
 
-The handshake is complete, and the heavy RSA math is dropped. The actual file or message is now transmitted.
+Because the initial messages in Phase 2 were sent in plaintext, both sides must now mathematically confirm the integrity of the conversation.
+
+* **Both Sides Exchange:** $AES_K(\text{hash(All\_Previous\_Handshake\_Messages)})$
+> *Explanation:* Both the Client and Server take a cryptographic hash of every single plaintext message sent during the handshake so far. They encrypt this hash using their newly derived Diffie-Hellman key ($K$) and exchange it.
+
+* **Result:** By successfully decrypting and matching these hashes, both parties mathematically confirm that:
+  * They both successfully derived the exact same symmetric key.
+  * Absolutely zero bytes of the plaintext handshake were tampered with by an eavesdropper.
+
+---
+
+### **Phase 6: The Secure Tunnel (Data Transfer)**
+
+The handshake is fully verified, and the heavy RSA math is dropped. The actual file or message is now transmitted.
 
 * **Client $\rightarrow$ Server:** $AES_K(M \parallel MAC)$
 > *Explanation:* The Client uses a standard symmetric library (like AES) with the secure key ($K$), attaches a Message Authentication Code (MAC), and sends the data.

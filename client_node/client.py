@@ -2,11 +2,13 @@ import socket
 import json
 import sys
 import os
+import hashlib
 import secrets
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from crypto_modules.custom_rsa import CustomRSA
 from crypto_modules.diffie_hellman import DHOakley
+from crypto_modules.secure_tunnel import AESCipher
 
 SERVER_HOST = '127.0.0.1'  
 SERVER_PORT = 65432        
@@ -41,7 +43,7 @@ def start_client():
         data = s.recv(4096)
         server_msg = json.loads(data.decode())
         print(f"Received from Server: {server_msg['type']}")
-        
+        server_nonce = server_msg['nonce_s']
         server_certificate = server_msg['certificate']
 
         # 4. Phase 3: Authentication
@@ -56,6 +58,12 @@ def start_client():
             print("Verification failed")
             s.close()
             return
+
+        # Extract Server's public key from the verified certificate claim
+        # Format: "Identity=Server,PubKey=<e>,<n>"
+        parts = plaintext_claim.split(",")
+        server_e = int(parts[1].split("=")[1])
+        server_n = int(parts[2])
 
         # 5. Phase 4: Diffie-Hellman
         # TODO: If verified, wait for Server to send DH parameters.
@@ -72,13 +80,6 @@ def start_client():
             "Y_s": Y_s
         })
         server_signature = server_dh_msg['signature'] 
-
-        # Load Server's Public Key from file (Note: In real TLS, you extract this from the server_certificate you verified earlier!)
-        server_pub_key_path = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'server_node', 'server_storage', 'server_public_key.json')
-        with open(server_pub_key_path, 'r') as f:
-            server_pub_data = json.load(f)
-            server_e = server_pub_data['e']
-            server_n = server_pub_data['n']
 
         if not CustomRSA.verify_signature(dh_claim_str, server_signature, (server_e, server_n), server_n):
             print("Server DH signature verification failed!")
@@ -98,7 +99,41 @@ def start_client():
         print("Sent ClientKeyExchange with Y_c.")
 
         #Calculate session key shared between server and client
-        session_key = client_dh.calculate_session_key(Y_s)
+        session_key = client_dh.calculate_session_key(Y_s, client_nonce, server_nonce)
+
+        # 6. Phase 5: Handshake Verification
+        print("Verifying Handshake Integrity (Phase 5)...")
+        
+        all_messages = (
+            json.dumps(client_hello) +
+            json.dumps(server_msg) +
+            json.dumps(server_dh_msg) +
+            json.dumps(client_key_exchange)
+        )
+        handshake_hash = hashlib.sha256(all_messages.encode()).hexdigest()
+
+        cipher = AESCipher(session_key)
+
+        # Send ClientFinished
+        client_finished = {
+            "type": "ClientFinished",
+            "verify_data": cipher.encrypt(handshake_hash)
+        }
+        s.sendall(json.dumps(client_finished).encode())
+        print("Sent ClientFinished.")
+
+        # Receive ServerFinished
+        server_finished_data = s.recv(4096)
+        server_finished_msg = json.loads(server_finished_data.decode())
+        
+        # Decrypt server's hash and compare
+        server_hash = cipher.decrypt(server_finished_msg['verify_data'])
+        if server_hash == handshake_hash:
+            print("Server Handshake Hash Verified Successfully! Secure Tunnel Established.")
+        else:
+            print("Server Handshake Hash Verification Failed! Man-in-the-Middle detected.")
+            s.close()
+            return
 
 
 

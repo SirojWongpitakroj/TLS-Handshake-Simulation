@@ -28,9 +28,9 @@ class DHOakley:
 
         return (self.p, self.g, self.X, self.Y)
 
-    def calculate_session_key(self, Y):
-        self.session_k = mod_exp(Y, self.X, self.p)
-        return self.session_k        
-        
-
-    
+    def calculate_session_key(self, Y, client_nonce, server_nonce):
+        import hashlib
+        raw_secret = mod_exp(Y, self.X, self.p)
+        combined = str(raw_secret) + client_nonce + server_nonce
+        self.session_k = hashlib.sha256(combined.encode()).hexdigest()
+        return self.session_k

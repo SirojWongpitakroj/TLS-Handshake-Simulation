@@ -2,12 +2,14 @@ import socket
 import json
 import os
 import sys
+import hashlib
 import secrets
 
 #Add root directory for the import crypto_modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
 from crypto_modules.custom_rsa import CustomRSA
 from crypto_modules.diffie_hellman import DHOakley
+from crypto_modules.secure_tunnel import AESCipher
 
 # Localhost setup for testing on your own machine
 SERVER_HOST = '127.0.0.1' 
@@ -142,7 +144,40 @@ def start_server():
             print("Received ClientKeyExchange.")
 
             # Calculate session key
-            session_key = server_dh.calculate_session_key(Y_c)
+            session_key = server_dh.calculate_session_key(Y_c, client_nonce, server_nonce)
+
+            # 5. Phase 5: Handshake Verification
+            print("Verifying Handshake Integrity (Phase 5)...")
+            
+            all_messages = (
+                json.dumps(client_msg) + 
+                json.dumps(server_hello) + 
+                json.dumps(dh_params_signature) + 
+                json.dumps(client_ke_msg)
+            )
+            handshake_hash = hashlib.sha256(all_messages.encode()).hexdigest()
+            
+            cipher = AESCipher(session_key)
+
+            # Wait for ClientFinished
+            client_finished_data = conn.recv(4096)
+            client_finished_msg = json.loads(client_finished_data.decode())
+            
+            # Decrypt their hash and compare
+            client_hash = cipher.decrypt(client_finished_msg['verify_data'])
+            if client_hash == handshake_hash:
+                print("Client Handshake Hash Verified Successfully!")
+            else:
+                print("Client Handshake Hash Verification Failed! Man-in-the-Middle detected.")
+                return
+
+            # Send ServerFinished
+            server_finished = {
+                "type": "ServerFinished",
+                "verify_data": cipher.encrypt(handshake_hash)
+            }
+            conn.sendall(json.dumps(server_finished).encode())
+            print("Sent ServerFinished. Handshake Fully Verified!")
 
     
 

@@ -3,10 +3,15 @@ __pycache__/
 *.py[cod]
 
 # Cryptographic Key Storage (DO NOT COMMIT)
-ca_storage/
-server_storage/
-client_storage/
+ca_storage/*
+!ca_storage/.gitkeep
+server_storage/*
+!server_storage/.gitkeep
+client_storage/*
+!client_storage/.gitkeep
 
 # Simulation Data Folders
-received_data/
-data_to_send/
+received_data/*
+!received_data/.gitkeep
+data_to_send/*
+!data_to_send/.gitkeep
